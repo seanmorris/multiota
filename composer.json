@@ -1,0 +1,13 @@
+{
+    "name": "seanmorris/multiota",
+    "require-dev": {
+        "simpletest/simpletest": "^1.1"
+    },
+    "authors": [
+        {
+            "name": "Sean Morris",
+            "email": "sean@sean-morris.com"
+        }
+    ],
+    "require": {}
+}
