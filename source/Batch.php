@@ -12,7 +12,7 @@ class Batch
 		, $pipes = []
 		, $done = FALSE
 		, $fed = []
-		, $return = FALSE;
+		, $return = TRUE;
 
 	protected
 		$records = 65536
