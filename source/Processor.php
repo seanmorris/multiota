@@ -1,32 +1,34 @@
 <?php
 namespace SeanMorris\Multiota;
-class BatchProcess
+class Processor
 {
 	protected
-		$child, $max;
+		$child, $max, $timeout;
 
-	public function __construct($child, $max)
+	public function __construct($child, $max, $timeout = 1)
 	{
 		$this->child = $child;
 		$this->max = $max;
+		$this->timeout = $timeout;
 	}
-	public function process()
+
+	public function process($input)
+	{
+		print $input;
+		print PHP_EOL;
+	}
+
+	public function spin()
 	{
 		$child = $this->child;
 		$max = $this->max;
-
-		//printf('Child #%d started!\n', $child);
 
 		$stdin = fopen('php://stdin', 'r');
 		stream_set_blocking($stdin, FALSE);
 
 		$start = time();
-
 		$loops = 0;
-
 		$processed = 0;
-
-		$timeout = 1;
 
 		while($processed < $max)
 		{
@@ -35,10 +37,10 @@ class BatchProcess
 			if(!strlen($input))
 			{
 				$loops++;
-				if($loops > 10000 && (time() - $start) > $timeout)
+				if($loops > 10000 && (time() - $start) > $this->timeout)
 				{
 					$log = sprintf(
-						'Child process #%d timed out, processed %d records.\n'
+						'Child process #%d timed out, processed %d records.'
 						, $child
 						, $processed
 					);
@@ -51,7 +53,7 @@ class BatchProcess
 				continue;
 			}
 
-			print $input . PHP_EOL;
+			$this->process($input);
 
 			$loops = 0;
 
@@ -59,7 +61,7 @@ class BatchProcess
 		}
 
 		$log = sprintf(
-			'Child process #%d processed %d records.\n'
+			'Child process #%d processed %d records.'
 			, $child
 			, $processed
 		);
