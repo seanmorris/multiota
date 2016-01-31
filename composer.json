@@ -10,6 +10,9 @@
         }
     ],
     "require": {},
+    "require-dev": {
+        "simpletest/simpletest": "dev-master"
+    },
     "autoload": {
         "psr-4": {
             "SeanMorris\\Multiota\\Test\\": "test/",

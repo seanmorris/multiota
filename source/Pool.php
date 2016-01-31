@@ -3,33 +3,40 @@ namespace SeanMorris\Multiota;
 class Pool
 {
 	protected
-		$processor = NULL
-		, $children = 16
-		, $maxRecords = 50
-		, $maxChunkSize = 10;
+		$dataSource
+		, $processor
+		, $children
+		, $maxRecords
+		, $maxChunkSize
+		, $childTimeout
+		, $total
+		, $progress;
 
-	public function __construct($dataSource, $processor, $options = [])
-	{
+	public function __construct($dataSource, $processor = NULL
+		, $children = 16, $maxRecords = 500
+		, $maxChunkSize = 10, $childTimeout = 0.01
+	){
 		$this->dataSource = new $dataSource;
 		$this->processor = $processor;
-
-		$this->children = isset($options['children'])
-			? $options['children']
-			: $this->children;
-
-		$this->maxRecords = isset($options['maxRecords'])
-			? $options['maxRecords']
-			: $this->maxRecords;
-
-		$this->maxChunkSize = isset($options['maxChunkSize'])
-			? $options['maxChunkSize']
-			: $this->maxChunkSize;
+		$this->children = $children;
+		$this->maxRecords = $maxRecords;
+		$this->maxChunkSize = $maxChunkSize;
+		$this->childTimeout = $childTimeout;
 	}
 
 	public function postprocess($record)
 	{
+		return;
 		echo $record;
 		echo PHP_EOL;
+	}
+
+	public function progress($progress)
+	{
+		print $progress;
+		print "/";
+		print $this->dataSource->total();
+		print " Processed.\n";
 	}
 
 	public function start()
@@ -41,9 +48,9 @@ class Pool
 		);
 
 		$started = 0;
-		$total = $this->dataSource->total();
 		$sent = 0;
 		$processes = [];
+		$progress = 0;
 
 		while(1)
 		{
@@ -51,10 +58,11 @@ class Pool
 			{
 				$processes[] = proc_open(
 					sprintf(
-						'idilic batchProcess %s %d %d'
+						'idilic batchProcess %s %d %d %f'
 						, escapeshellarg($this->processor)
 						, ++$started
 						, $this->maxRecords
+						, $this->childTimeout
 					)
 					, $pipeDescriptor
 					, $pipe
@@ -119,15 +127,14 @@ class Pool
 				}
 			}
 
-			/*
+			$newProgress = $sent - array_sum($fed);
 
-			print $sent + array_sum($fed);
-			print "/";
-			print $total;
-			print " Remaining\n";
+			if($progress !== $newProgress)
+			{
+				$progress = $newProgress;
 
-			/*print ;
-			print "\n";*/
+				$this->progress($progress);
+			}
 
 			if($this->dataSource->done() && !$processes)
 			{

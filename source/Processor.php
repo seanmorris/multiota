@@ -5,7 +5,7 @@ class Processor
 	protected
 		$child, $max, $timeout;
 
-	public function __construct($child, $max, $timeout = 1)
+	public function __construct($child, $max, $timeout = 0.5)
 	{
 		$this->child = $child;
 		$this->max = $max;
@@ -14,8 +14,6 @@ class Processor
 
 	public function process($input)
 	{
-		print $input;
-		print PHP_EOL;
 	}
 
 	public function spin()
@@ -37,25 +35,29 @@ class Processor
 			if(!strlen($input))
 			{
 				$loops++;
-				if($loops > 10000 && (time() - $start) > $this->timeout)
+
+				if($loops > 100)
 				{
-					$log = sprintf(
-						'Child process #%d timed out, processed %d records.'
-						, $child
-						, $processed
-					);
+					if((time() - $start) > $this->timeout)
+					{
+						$log = sprintf(
+							'Child process #%d timed out, processed %d records.'
+							, $child
+							, $processed
+						);
 
-					\SeanMorris\Ids\Log::debug($log);
+						\SeanMorris\Ids\Log::debug($log);
 
-					return;
+						return;
+					}
+
+					$loops = 0;
 				}
 
 				continue;
 			}
 
 			$this->process($input);
-
-			$loops = 0;
 
 			$processed++;
 		}
