@@ -3,13 +3,22 @@ namespace SeanMorris\Multiota;
 class Processor
 {
 	protected
-		$child, $max, $timeout;
+		$child, $max, $timeout, $processed, $start, $done = FALSE;
 
 	public function __construct($child, $max, $timeout = 0.5)
 	{
 		$this->child = $child;
 		$this->max = $max;
 		$this->timeout = $timeout;
+
+		$log = sprintf(
+			'Child process #%d starting, %d record max, %ds timeout.'
+			, $child
+			, $this->max
+			, $this->timeout
+		);
+
+		\SeanMorris\Ids\Log::debug($log);
 	}
 
 	public function process($input)
@@ -24,50 +33,82 @@ class Processor
 		$stdin = fopen('php://stdin', 'r');
 		stream_set_blocking($stdin, FALSE);
 
-		$start = time();
+		$this->start = time();
 		$loops = 0;
-		$processed = 0;
+		$this->processed = 0;
 
-		while($processed < $max)
+		while($this->processed < $max && !$this->done)
 		{
 			$input = trim(fgets($stdin));
 
-			if(!strlen($input))
+			$loops++;
+
+			if(strlen($input))
 			{
-				$loops++;
+				$this->resetTimeout();
+				$loops = 0;
+			}
 
-				if($loops > 100)
+			if($this->timeout > 0 && $loops > 100)
+			{
+				if($this->timeout())
 				{
-					if((time() - $start) > $this->timeout)
-					{
-						$log = sprintf(
-							'Child process #%d timed out, processed %d records.'
-							, $child
-							, $processed
-						);
+					$this->process(FALSE);
 
-						\SeanMorris\Ids\Log::debug($log);
+					$log = sprintf(
+						'Child process #%d timed out after %s seconds, processed %d records.'
+						, $child
+						, $this->timeout
+						, $this->processed
+					);
 
-						return;
-					}
+					\SeanMorris\Ids\Log::debug($log);
 
-					$loops = 0;
+					break;
 				}
 
+				$loops = 0;
+			}
+
+			if(!strlen($input))
+			{
+				$this->process(NULL);
 				continue;
 			}
 
 			$this->process($input);
 
-			$processed++;
+			$this->processed++;
 		}
+
+		$this->process(FALSE);
 
 		$log = sprintf(
 			'Child process #%d processed %d records.'
 			, $child
-			, $processed
+			, $this->processed
 		);
 
 		\SeanMorris\Ids\Log::debug($log);
+	}
+
+	protected function resetTimeout($timeout = NULL)
+	{
+		$this->start = time();
+
+		if($timeout)
+		{
+			$this->timeout = $timeout;
+		}
+	}
+
+	protected function timeout()
+	{
+		if(!$this->start)
+		{
+			$this->start = time();
+		}
+
+		return (time() - $this->start) > $this->timeout;
 	}
 }

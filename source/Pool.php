@@ -26,7 +26,6 @@ class Pool
 
 	public function postprocess($record)
 	{
-		return;
 		echo $record;
 		echo PHP_EOL;
 	}
@@ -60,7 +59,7 @@ class Pool
 					sprintf(
 						'idilic batchProcess %s %d %d %f'
 						, escapeshellarg($this->processor)
-						, ++$started
+						, $started++
 						, $this->maxRecords
 						, $this->childTimeout
 					)
@@ -68,9 +67,12 @@ class Pool
 					, $pipe
 				);
 
+				stream_set_blocking($pipe[0], FALSE);
 				stream_set_blocking($pipe[1], FALSE);
 
 				$pipes[] = $pipe;
+
+				$this->onChildOpen($pipe);
 			}
 
 			foreach($processes as $childId => $child)
@@ -95,6 +97,8 @@ class Pool
 				if(!is_resource($child) || feof($pipes[$childId][1]))
 				{
 					$status = proc_get_status($child);
+
+					$this->onChildKill($pipes[$childId]);
 
 					if($status['running'] == FALSE)
 					{
@@ -133,7 +137,7 @@ class Pool
 			{
 				$progress = $newProgress;
 
-				$this->progress($progress);
+				//$this->progress($progress);
 			}
 
 			if($this->dataSource->done() && !$processes)
@@ -144,4 +148,9 @@ class Pool
 
 		$done = TRUE;
 	}
+
+	protected function onChildOpen($pipes)
+	{}
+	protected function onChildKill($pipes)
+	{}
 }

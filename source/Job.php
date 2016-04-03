@@ -3,7 +3,8 @@ namespace SeanMorris\Multiota;
 class Job
 {
 	protected
-		$dataSource
+		$pool
+		, $dataSource
 		, $processor
 		, $maxChildren
 		, $maxRecordsPerChild
@@ -13,7 +14,8 @@ class Job
 
 	public function start()
 	{
-		$pool = new Pool(
+		$pool = $this->pool ? $this->pool : 'SeanMorris\Multiota\Pool';
+		$pool = new $pool(
 			$this->dataSource
 			, $this->processor
 			, $this->maxChildren
