@@ -8,38 +8,71 @@ class Pool
 		, $children
 		, $maxRecords
 		, $maxChunkSize
+		, $sourceArgs
 		, $childTimeout
 		, $total
 		, $progress;
 
-	public function __construct($dataSource, $processor = NULL
-		, $children = 16, $maxRecords = 500
-		, $maxChunkSize = 10, $childTimeout = 0.01
-	){
-		$this->dataSource = new $dataSource;
-		$this->processor = $processor;
-		$this->children = $children;
-		$this->maxRecords = $maxRecords;
-		$this->maxChunkSize = $maxChunkSize;
-		$this->childTimeout = $childTimeout;
+	public function __construct(...$args)
+	{
+		foreach($args as $arg)
+		{
+			if(is_a($arg, 'SeanMorris\Multiota\Processor', TRUE))
+			{
+				$this->processor = $arg;
+			}
+
+			if(is_a($arg, 'SeanMorris\Multiota\DataSource', TRUE))
+			{
+				$this->dataSource = new $arg;
+			}
+
+			if(is_array($arg))
+			{
+				$this->sourceArgs = $arg;
+
+				$arg = $arg + [
+					'children'       => 16
+					, 'maxRecords'   => 128
+					, 'maxChunkSize' => 32
+					, 'childTimeout' => 2
+				];
+
+				$this->children     = $arg['children'];
+				$this->maxRecords   = $arg['maxRecords'];
+				$this->maxChunkSize = $arg['maxChunkSize'];
+				$this->childTimeout = $arg['childTimeout'];
+			}
+		}
 	}
 
-	public function postprocess($record)
+	public function error($error)
 	{
-		echo $record;
-		echo PHP_EOL;
+		fwrite(STDERR, $error . PHP_EOL);
+	}
+
+	public function postprocess($record, $child)
+	{
+		fwrite(STDOUT, $record . PHP_EOL);
 	}
 
 	public function progress($progress)
 	{
-		print $progress;
-		print "/";
-		print $this->dataSource->total();
-		print " Processed.\n";
+		$total = $this->dataSource->total();
+
+		if($total !== NULL)
+		{
+			fwrite(STDERR, "Pool processed " . $progress . "/" . $total . " records.\n");
+		}
+		else
+		{
+			fwrite(STDERR, "Pool processed " . $progress . " records.\n");
+		}
 	}
 
 	public function start()
 	{
+		fwrite(STDERR, sprintf('Starting pool with room for %d children.', $this->children) . PHP_EOL);
 		$pipeDescriptor = array(
 			0 => array('pipe', 'r'),
 			1 => array('pipe', 'w'),
@@ -56,19 +89,16 @@ class Pool
 			while(!$this->dataSource->done() && count($processes) < $this->children)
 			{
 				$processes[] = proc_open(
-					sprintf(
-						'idilic batchProcess %s %d %d %f'
-						, escapeshellarg($this->processor)
-						, $started++
-						, $this->maxRecords
-						, $this->childTimeout
-					)
+					$this->childCommand($started)
 					, $pipeDescriptor
 					, $pipe
 				);
 
+				$started++;
+
 				stream_set_blocking($pipe[0], FALSE);
 				stream_set_blocking($pipe[1], FALSE);
+				stream_set_blocking($pipe[2], FALSE);
 
 				$pipes[] = $pipe;
 
@@ -91,7 +121,14 @@ class Pool
 						break;
 					}
 
-					$this->postprocess($output);
+					$this->postprocess($output, $child);
+				}
+
+				while($error = fgets($pipes[$childId][2]))
+				{
+					$error = trim($error);
+
+					$this->error("\t" . $error);
 				}
 
 				if(!is_resource($child) || feof($pipes[$childId][1]))
@@ -122,8 +159,11 @@ class Pool
 					&& $curChunk < $this->maxChunkSize
 				){
 					$record = $this->dataSource->fetch();
-					
-					fwrite($pipes[$childId][0], $record . PHP_EOL);
+
+					if($record !== FALSE)
+					{
+						fwrite($pipes[$childId][0], $record . PHP_EOL);
+					}
 
 					$fed[$childId]++;
 					$curChunk++;
@@ -137,7 +177,7 @@ class Pool
 			{
 				$progress = $newProgress;
 
-				//$this->progress($progress);
+				$this->progress($progress);
 			}
 
 			if($this->dataSource->done() && !$processes)
@@ -147,6 +187,19 @@ class Pool
 		}
 
 		$done = TRUE;
+
+		fwrite(STDERR, 'Pool\'s closed.' . PHP_EOL);
+	}
+
+	protected function childCommand($started)
+	{
+		return sprintf(
+			'idilic batchProcess %s %d %d %f'
+			, escapeshellarg($this->processor)
+			, $started
+			, $this->maxRecords
+			, $this->childTimeout
+		);
 	}
 
 	protected function onChildOpen($pipes)

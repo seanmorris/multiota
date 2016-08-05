@@ -3,7 +3,7 @@ namespace SeanMorris\Multiota;
 class DataSource
 {
 	protected
-		$records = 2**8
+		$records = NULL
 		, $done = FALSE
 	;
 
@@ -19,30 +19,15 @@ class DataSource
 
 	public function fetch()
 	{
-		static $i = NULL;
+		$line = fgets(STDIN);
 
-		if($this->done)
+		if(!feof(STDIN) && trim($line))
 		{
-			return;
+			return $line;
 		}
 
-		if($i === NULL)
-		{
-			$i = $this->records;
-		}
-
-		$i--;
-
-		if($i == 0)
-		{
-			$this->done = TRUE;
-		}
-
-		return $i;
-	/*
-	public function fetch()
-	{
 		$this->done = TRUE;
-	*/
+
+		return FALSE;
 	}
 }

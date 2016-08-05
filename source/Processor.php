@@ -12,17 +12,20 @@ class Processor
 		$this->timeout = $timeout;
 
 		$log = sprintf(
-			'Child process #%d starting, %d record max, %ds timeout.'
+			'Child process #%d starting, processing %d record max, %ds timeout.'
 			, $child
 			, $this->max
 			, $this->timeout
 		);
+
+		fwrite(STDERR, $log . PHP_EOL);
 
 		\SeanMorris\Ids\Log::debug($log);
 	}
 
 	public function process($input)
 	{
+		return $input;
 	}
 
 	public function spin()
@@ -45,6 +48,13 @@ class Processor
 
 			if(strlen($input))
 			{
+				$log = sprintf(
+					'Child process #%d got input. (%s)'
+					, $child
+					, $input
+				);
+
+				//\SeanMorris\Ids\Log::debug($log);
 				$this->resetTimeout();
 				$loops = 0;
 			}
@@ -56,11 +66,13 @@ class Processor
 					$this->process(FALSE);
 
 					$log = sprintf(
-						'Child process #%d timed out after %s seconds, processed %d records.'
+						'Child process #%d timed out after %ds, processed %d records.'
 						, $child
 						, $this->timeout
 						, $this->processed
 					);
+
+					fwrite(STDERR, $log . PHP_EOL);
 
 					\SeanMorris\Ids\Log::debug($log);
 
@@ -76,7 +88,7 @@ class Processor
 				continue;
 			}
 
-			$this->process($input);
+			fwrite(STDOUT, $this->process($input) . PHP_EOL);
 
 			$this->processed++;
 		}
@@ -84,10 +96,12 @@ class Processor
 		$this->process(FALSE);
 
 		$log = sprintf(
-			'Child process #%d processed %d records.'
+			'Child process #%d processed %d records. Exiting...'
 			, $child
 			, $this->processed
 		);
+
+		fwrite(STDERR, $log . PHP_EOL);
 
 		\SeanMorris\Ids\Log::debug($log);
 	}
