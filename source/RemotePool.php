@@ -13,21 +13,18 @@ class RemotePool extends Pool
 		{
 			$this->servers = $this->sourceArgs['servers'];
 		}
+		else
+		{
+			throw new \Exception('No servers defined for remote job.');
+		}
+
+		fwrite(STDERR, "Connecting to\n\t" . implode("\n\t", $this->servers) . PHP_EOL);
 	}
 
 	protected function childCommand($started)
 	{
 		$serverCount = count($this->servers);
-
-		if(!$serverCount)
-		{
-			throw new \Exception('No servers defined for remote job.');
-		}
-
 		$server = $this->servers[$started % $serverCount];
-
-		fwrite(STDERR, 'Connecting to ' . $server . PHP_EOL);
-
 		$command = sprintf(
 			'ssh %s \'idilic batchProcess %s %d %d %f\''
 			, escapeshellarg($server)
@@ -36,8 +33,6 @@ class RemotePool extends Pool
 			, $this->maxRecords
 			, $this->childTimeout
 		);
-
-		fwrite(STDERR, 'Running ' . $command . PHP_EOL);
 
 		return $command;
 	}

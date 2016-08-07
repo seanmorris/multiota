@@ -2,7 +2,10 @@
 namespace SeanMorris\Multiota\Test\Count;
 class CountSource extends \SeanMorris\Multiota\DataSource
 {
-	protected $records = 2**8;
+	protected
+		$records = 2**16
+		, $done  = FALSE
+	;
 
 	public function fetch()
 	{

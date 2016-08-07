@@ -4,7 +4,6 @@ class CapitalizeProcessor extends \SeanMorris\Multiota\Processor
 {
 	public function process($input)
 	{
-		print strtoupper($input);
-		print PHP_EOL;
+		return strtoupper($input);
 	}
 }

@@ -6,10 +6,11 @@ class Job
 		$processor            = 'SeanMorris\Multiota\Processor'
 		, $pool               = 'SeanMorris\Multiota\Pool'
 		, $dataSource         = 'SeanMorris\Multiota\DataSource'
-		, $maxChildren        = 10
-		, $maxRecordsPerChild = 100
-		, $chunkSize          = 10
+		, $maxChildren        = 8
+		, $maxRecordsPerChild = 128
+		, $chunkSize          = 16
 		, $childTimeout       = 2
+		, $unserialize        = FALSE
 		, $servers            = []
 	;
 
@@ -37,17 +38,19 @@ class Job
 				$this->sourceArgs = $arg;
 
 				$arg = $arg + [
-					'maxChildren'          => 16
-					, 'maxRecordsPerChild' => 128
-					, 'chunkSize'          => 32
-					, 'childTimeout'       => 2
-					, 'servers'            => []
+					'maxChildren'          => $this->maxChildren
+					, 'maxRecordsPerChild' => $this->maxRecordsPerChild
+					, 'chunkSize'          => $this->chunkSize
+					, 'childTimeout'       => $this->childTimeout
+					, 'unserialize'        => $this->unserialize
+					, 'servers'            => $this->servers
 				];
 
 				$this->maxChildren        = $arg['maxChildren'];
 				$this->maxRecordsPerChild = $arg['maxRecordsPerChild'];
 				$this->chunkSize          = $arg['chunkSize'];
 				$this->childTimeout       = $arg['childTimeout'];
+				$this->unserialize        = $arg['unserialize'];
 				$this->servers            = $arg['servers'];
 			}
 		}

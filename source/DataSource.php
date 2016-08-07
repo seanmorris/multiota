@@ -3,31 +3,45 @@ namespace SeanMorris\Multiota;
 class DataSource
 {
 	protected
-		$records = NULL
-		, $done = FALSE
+		$handle
+		, $unserialize
 	;
+
+	public function __construct($handle = STDIN, $unserialize = FALSE)
+	{
+		$this->handle      = STDIN;
+		$this->unserialize = $unserialize;
+	}
 
 	public function total()
 	{
-		return $this->records;
+		return NULL;
 	}
 
 	public function done()
 	{
-		return $this->done;
+		return feof($this->handle);
 	}
 
 	public function fetch()
 	{
-		$line = fgets(STDIN);
+		$line = $this->read();
 
-		if(!feof(STDIN) && trim($line))
+		if(!$this->done())
 		{
 			return $line;
 		}
 
-		$this->done = TRUE;
-
 		return FALSE;
+	}
+
+	protected function read()
+	{
+		if($this->unserialize)
+		{
+			return unserialize(base64_decode(trim(fgets($this->handle))));
+		}
+
+		return trim(fgets($this->handle));
 	}
 }

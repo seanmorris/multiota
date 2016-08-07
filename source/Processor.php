@@ -42,7 +42,7 @@ class Processor
 
 		while($this->processed < $max && !$this->done)
 		{
-			$input = trim(fgets($stdin));
+			$input = unserialize(base64_decode(trim(fgets($stdin))));
 
 			$loops++;
 
@@ -92,8 +92,6 @@ class Processor
 
 			$this->processed++;
 		}
-
-		$this->process(FALSE);
 
 		$log = sprintf(
 			'Child process #%d processed %d records. Exiting...'

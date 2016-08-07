@@ -53,7 +53,14 @@ class Pool
 
 	public function postprocess($record, $child)
 	{
-		fwrite(STDOUT, $record . PHP_EOL);
+		if(is_scalar($record))
+		{
+			fwrite(STDOUT, $record . PHP_EOL);
+		}
+		else
+		{
+			fwrite(STDOUT, base64_encode(serialize($record)) . PHP_EOL);
+		}
 	}
 
 	public function progress($progress)
@@ -73,6 +80,7 @@ class Pool
 	public function start()
 	{
 		fwrite(STDERR, sprintf('Starting pool with room for %d children.', $this->children) . PHP_EOL);
+		
 		$pipeDescriptor = array(
 			0 => array('pipe', 'r'),
 			1 => array('pipe', 'w'),
@@ -162,7 +170,7 @@ class Pool
 
 					if($record !== FALSE)
 					{
-						fwrite($pipes[$childId][0], $record . PHP_EOL);
+						fwrite($pipes[$childId][0], base64_encode(serialize($record)) . PHP_EOL);
 					}
 
 					$fed[$childId]++;
