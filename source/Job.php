@@ -3,13 +3,14 @@ namespace SeanMorris\Multiota;
 class Job
 {
 	protected
-		$processor            = 'SeanMorris\Multiota\Processor'
+		$mapper               = 'SeanMorris\Multiota\Mapper'
+		, $reducer            = NULL
 		, $pool               = 'SeanMorris\Multiota\Pool'
 		, $dataSource         = 'SeanMorris\Multiota\DataSource'
-		, $maxChildren        = 8
-		, $maxRecordsPerChild = 128
-		, $chunkSize          = 16
-		, $childTimeout       = 2
+		, $maxChildren        = 10
+		, $maxRecordsPerChild = 32
+		, $chunkSize          = 4
+		, $childTimeout       = 1
 		, $unserialize        = FALSE
 		, $servers            = []
 	;
@@ -18,19 +19,28 @@ class Job
 	{
 		foreach($args as $arg)
 		{
-			if(is_a($arg, 'SeanMorris\Multiota\Processor', TRUE))
+			if(is_a($arg, 'SeanMorris\Multiota\Reducer', TRUE))
 			{
-				$this->processor = $arg;
+				$this->reducer = $arg;
+				continue;
+			}
+
+			if(is_a($arg, 'SeanMorris\Multiota\Mapper', TRUE))
+			{
+				$this->mapper = $arg;
+				continue;
 			}
 
 			if(is_a($arg, 'SeanMorris\Multiota\Pool', TRUE))
 			{
 				$this->pool = $arg;
+				continue;
 			}
 
 			if(is_a($arg, 'SeanMorris\Multiota\DataSource', TRUE))
 			{
 				$this->dataSource = $arg;
+				continue;
 			}
 
 			if(is_array($arg))
@@ -52,6 +62,8 @@ class Job
 				$this->childTimeout       = $arg['childTimeout'];
 				$this->unserialize        = $arg['unserialize'];
 				$this->servers            = $arg['servers'];
+
+				continue;
 			}
 		}
 	}
@@ -60,7 +72,8 @@ class Job
 	{
 		$pool = new $this->pool(
 			$this->dataSource
-			, $this->processor
+			, $this->mapper
+			, $this->reducer
 			, [
 				'children'       => $this->maxChildren
 				, 'maxRecords'   => $this->maxRecordsPerChild

@@ -5,6 +5,7 @@ class DataSource
 	protected
 		$handle
 		, $unserialize
+		, $done
 	;
 
 	public function __construct($handle = STDIN, $unserialize = FALSE)
@@ -20,22 +21,10 @@ class DataSource
 
 	public function done()
 	{
-		return feof($this->handle);
+		return $this->done || feof($this->handle);
 	}
 
 	public function fetch()
-	{
-		$line = $this->read();
-
-		if(!$this->done())
-		{
-			return $line;
-		}
-
-		return FALSE;
-	}
-
-	protected function read()
 	{
 		if($this->unserialize)
 		{

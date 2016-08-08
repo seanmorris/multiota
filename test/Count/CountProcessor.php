@@ -1,6 +1,6 @@
 <?php
 namespace SeanMorris\Multiota\Test\Count;
-class CountProcessor extends \SeanMorris\Multiota\Processor
+class CountProcessor extends \SeanMorris\Multiota\Mapper
 {
 	public function process($input)
 	{

@@ -21,14 +21,30 @@ class RemotePool extends Pool
 		fwrite(STDERR, "Connecting to\n\t" . implode("\n\t", $this->servers) . PHP_EOL);
 	}
 
-	protected function childCommand($started)
+	protected function mapperCommand($started)
 	{
 		$serverCount = count($this->servers);
 		$server = $this->servers[$started % $serverCount];
 		$command = sprintf(
 			'ssh %s \'idilic batchProcess %s %d %d %f\''
 			, escapeshellarg($server)
-			, escapeshellarg(addslashes(addslashes($this->processor)))
+			, escapeshellarg(addslashes(addslashes($this->mapper)))
+			, $started
+			, $this->maxRecords
+			, $this->childTimeout
+		);
+
+		return $command;
+	}
+
+	protected function reduceCommand($started)
+	{
+		$serverCount = count($this->servers);
+		$server = $this->servers[$started % $serverCount];
+		$command = sprintf(
+			'ssh %s \'idilic batchProcess %s %d %d %f\''
+			, escapeshellarg($server)
+			, escapeshellarg(addslashes(addslashes($this->reducer)))
 			, $started
 			, $this->maxRecords
 			, $this->childTimeout
