@@ -3,7 +3,13 @@ namespace SeanMorris\Multiota;
 class Mapper
 {
 	protected
-		$child, $max, $timeout, $processed, $start, $done = FALSE, $shortClass;
+		$child
+		, $max
+		, $timeout
+		, $processed
+		, $start
+		, $done = FALSE
+		, $shortClass;
 
 	public function __construct($child = -1, $max = -1, $timeout = -1)
 	{
@@ -146,7 +152,12 @@ class Mapper
 		return (time() - $this->start) > $this->timeout;
 	}
 
-	function finish()
+	public function processed()
+	{
+		return $this->processed;
+	}
+
+	protected function finish()
 	{
 
 	}

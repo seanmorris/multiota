@@ -14,18 +14,23 @@ class Reducer extends Mapper
 		return $this->existingData;
 	}
 
-	public function finish()
+	protected function finish()
 	{
-		foreach($this->existingData as $key => $value)
-		{
-			$this->reduce($key, $value);
-		}
+		$this->emit($this->existingData);
 
-		\SeanMorris\Ids\Log::debug($this->existingData);
+		$this->existingData && \SeanMorris\Ids\Log::debug(
+			'Reducer process emitting data...'
+			, $this->existingData
+		);
 	}
 
 	public function process($input)
 	{
+		if(is_string($input))
+		{
+			$input = unserialize(base64_decode($input));
+		}
+		
 		$input && $this->accumulate($input);
 	}
 }

@@ -7,10 +7,10 @@ class Job
 		, $reducer            = NULL
 		, $pool               = 'SeanMorris\Multiota\Pool'
 		, $dataSource         = 'SeanMorris\Multiota\DataSource'
-		, $maxChildren        = 10
-		, $maxRecordsPerChild = 32
-		, $chunkSize          = 4
-		, $childTimeout       = 1
+		, $maxChildren        = 4
+		, $maxRecordsPerChild = 128
+		, $chunkSize          = 1
+		, $childTimeout       = 8
 		, $unserialize        = FALSE
 		, $servers            = []
 	;
@@ -19,11 +19,13 @@ class Job
 	{
 		foreach($args as $arg)
 		{
+			/*
 			if(is_a($arg, 'SeanMorris\Multiota\Reducer', TRUE))
 			{
 				$this->reducer = $arg;
 				continue;
 			}
+			*/
 
 			if(is_a($arg, 'SeanMorris\Multiota\Mapper', TRUE))
 			{

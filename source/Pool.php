@@ -12,17 +12,19 @@ class Pool
 		, $sourceArgs
 		, $childTimeout
 		, $total
-		, $progress;
+		, $mapped;
 
 	public function __construct(...$args)
 	{
 		foreach($args as $arg)
 		{
+			/*
 			if(is_a($arg, 'SeanMorris\Multiota\Reducer', TRUE))
 			{
 				$this->reducer = $arg;
 				continue;
 			}
+			*/
 
 			if(is_a($arg, 'SeanMorris\Multiota\Mapper', TRUE))
 			{
@@ -61,17 +63,30 @@ class Pool
 		fwrite(STDERR, $error . PHP_EOL);
 	}
 
-	public function progress($progress)
+	public function progress($mapped)
 	{
 		$total = $this->dataSource->total();
 
 		if($total !== NULL)
 		{
-			fwrite(STDERR, "Pool mapped " . $progress . "/" . $total . " records.\n");
+			fwrite(STDERR, sprintf(
+				"Pool %s %d/%d records.\n"
+				, is_a($this->mapper, 'SeanMorris\Multiota\Reducer', TRUE)
+					? 'reduced'
+					: 'mapped'
+				, $mapped
+				, $total
+			));
 		}
 		else
 		{
-			fwrite(STDERR, "Pool mapped " . $progress . " records.\n");
+			fwrite(STDERR, sprintf(
+				"Pool %s %d records.\n"
+				, is_a($this->mapper, 'SeanMorris\Multiota\Reducer', TRUE)
+					? 'reduced'
+					: 'mapped'
+				, $mapped
+			));
 		}
 	}
 
@@ -79,17 +94,18 @@ class Pool
 	{
 		fwrite(STDERR, sprintf('Starting pool with room for %d children.', $this->children) . PHP_EOL);
 
-		$started         = 0;
-		$sent            = 0;
-		$progress        = 0;
-		$mappers         = [];
-		$reducers        = [];
-		$reducersStarted = 0;
-		$localReducer    = NULL;
+		$started          = 0;
+		$sent             = 0;
+		$mapped           = 0;
+		$mappers          = [];
+		$localReducer     = NULL;
+		$maxMapperKey     = 0;
+		$maxReducerKey    = 0;
+		$reducersFedTotal = 0;
 
-		if($this->reducer)
+		if(is_a($this->mapper, 'SeanMorris\Multiota\Reducer', TRUE))
 		{
-			$localReducer = new $this->reducer;
+			$localReducer = new $this->mapper;
 		}
 
 		while(1)
@@ -98,13 +114,7 @@ class Pool
 			{
 				$newProcess = new ChildProcess($this->mapperCommand($started));
 				$mappers[] = $newProcess;
-				$started++;
-			}
-
-			while($mappers && count($reducers) < $this->children)
-			{
-				$newProcess = new ChildProcess($this->reducerCommand($started));
-				$reducers[] = $newProcess;
+				$maxMapperKey = max(array_keys($mappers));
 				$started++;
 			}
 
@@ -113,39 +123,6 @@ class Pool
 				if(!isset($fed[$childId]))
 				{
 					$fed[$childId] = 0;
-				}
-
-				while($error = $child->readError())
-				{
-					$this->error("\t" . $error);
-				}
-
-				while($record = $child->read())
-				{
-					$record = unserialize(base64_decode($record));
-
-					if($record instanceof ReduceRecord && $this->reducer)
-					{
-						$reducerId = hexdec(substr(md5($record->key()), -4)) % count($reducers);
-
-						$r = array_values($reducers);
-
-						if(!isset($reducersFed[$reducerId]))
-						{
-							$reducersFed[$reducerId] = 0;
-						}
-
-						$reducer = $r[$reducerId];
-						$reducer->write(base64_encode(serialize($record)) . PHP_EOL);
-					}
-					elseif(is_scalar($record))
-					{
-						fwrite(STDOUT, $record . PHP_EOL);
-					}
-					else
-					{
-						fwrite(STDOUT, base64_encode(serialize($record)) . PHP_EOL);
-					}
 				}
 
 				$curChunk = 0;
@@ -167,53 +144,50 @@ class Pool
 					}
 				}
 
+				while($error = $child->readError())
+				{
+					$this->error("\t" . $error);
+				}
+
+				$recordsFed = 0;
+
+				while($record = $child->read())
+				{
+					$record = unserialize(base64_decode($record));
+
+					if(is_scalar($record))
+					{
+						fwrite(STDOUT, $record . PHP_EOL);
+					}
+					elseif($localReducer && is_array($record))
+					{
+						foreach($record as $k => $v)
+						{
+							$localReducer->process(new ReduceRecord($k, $v));
+						}
+					}
+					else
+					{
+						fwrite(STDOUT, base64_encode(serialize($record)) . PHP_EOL);
+					}
+				}
+
 				if($child->isDead())
 				{
 					unset($child, $mappers[$childId], $fed[$childId]);
 				}
 			}
 
-			foreach($reducers as $reducerId => $reducer)
-			{
-				while($error = $reducer->readError())
-				{
-					$this->error("\t" . $error);
-				}
-
-				while($record = $reducer->read())
-				{
-					fwrite(STDERR, 'Received a record from a reducer.' . PHP_EOL);
-
-					$record = unserialize(base64_decode($record));
-					$localReducer->process($record);
-				}
-
-				if($reducer->isDead())
-				{
-					unset($reducer, $reducers[$reducerId]);
-				}
-
-			}
-
 			$newProgress = $sent - array_sum($fed);
 
-			if($progress !== $newProgress)
+			if($mapped !== $newProgress)
 			{
-				$progress = $newProgress;
+				$mapped = $newProgress;
 
-				$this->progress($progress);
+				$this->progress($mapped, $reducersFedTotal);
 			}
 
-			/*
-			fwrite(STDERR, sprintf(
-				"Data source done: %d, Mappers: %d, Reducers: %d\n"
-				, $this->dataSource->done()
-				, count($mappers)
-				, count($reducers)
-			));
-			*/
-
-			if($this->dataSource->done() && !$mappers && !$reducers)
+			if($this->dataSource->done() && !$mappers)
 			{
 				break;
 			}
