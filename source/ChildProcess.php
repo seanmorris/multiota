@@ -17,7 +17,7 @@ class ChildProcess
 
 	public function __construct($command)
 	{
-		\SeanMorris\Ids\Log::debug(sprintf("Starting child process\n%s", $command));
+		fwrite(STDERR, sprintf("\tStarting child process\n\t\t%s\n", $command));
 		$this->command = $command;
 		$this->process = proc_open(
 			$command

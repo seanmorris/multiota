@@ -12,8 +12,6 @@ class Reducer extends \SeanMorris\Multiota\Reducer
 		$this->existingData[$data->key()] = $data->value() + $this->existingData[$data->key()];
 
 		ksort($this->existingData);
-
-		\SeanMorris\Ids\Log::debug('Reducer process accumulated input.', $data, $this->existingData);
 	}
 
 }

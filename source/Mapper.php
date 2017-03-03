@@ -28,8 +28,6 @@ class Mapper
 		);
 
 		fwrite(STDERR, $log . PHP_EOL);
-
-		\SeanMorris\Ids\Log::debug($log);
 	}
 
 	public function process($input)
@@ -70,17 +68,22 @@ class Mapper
 				$input = unserialize(base64_decode($input));
 
 				$log = sprintf(
-					'%s process #%d got input.'
+					"%s process #%d got input.\n%s"
 					, $this->shortClass
 					, $child
+					, print_r($input, 1)
 				);
 
 				$this->processed++;
-
-				\SeanMorris\Ids\Log::debug($log, $input, $this->processed);
+				fwrite(STDERR, $log . PHP_EOL);
 
 				$this->resetTimeout();
 				$loops = 0;
+
+				if(!is_a($input, 'SeanMorris\Multiota\ReduceRecord'))
+				{
+					//$input = new ReduceRecord(uniqid(), $input);
+				}
 
 				if(($output = $this->process($input)) !== NULL)
 				{
@@ -102,7 +105,7 @@ class Mapper
 
 					fwrite(STDERR, $log . PHP_EOL);
 
-					\SeanMorris\Ids\Log::debug($log);
+					//\SeanMorris\Ids\Log::debug($log);
 
 					$timedout = TRUE;
 
@@ -124,7 +127,7 @@ class Mapper
 
 		$timedout || fwrite(STDERR, $log . PHP_EOL);
 
-		$timedout || \SeanMorris\Ids\Log::debug($log);
+		//$timedout || \SeanMorris\Ids\Log::debug($log);
 	}
 
 	protected function resetTimeout($timeout = NULL)

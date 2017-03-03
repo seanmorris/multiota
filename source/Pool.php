@@ -211,7 +211,7 @@ class Pool
 	protected function mapperCommand($started)
 	{
 		return sprintf(
-			'idilic batchProcess %s %d %d %0.3f'
+			'multiota_child %s %d %d %0.3f'
 			, escapeshellarg($this->mapper)
 			, $started
 			, $this->maxRecords

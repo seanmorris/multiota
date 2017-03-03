@@ -6,7 +6,7 @@ class Reducer extends Mapper
 
 	protected function accumulate($data)
 	{
-		$this->existingData[] = $data;
+		$this->existingData[$data->key()] = $data->value();
 	}
 
 	public function get()
@@ -17,15 +17,12 @@ class Reducer extends Mapper
 	protected function finish()
 	{
 		$this->emit($this->existingData);
-
-		$this->existingData && \SeanMorris\Ids\Log::debug(
-			'Reducer process emitting data...'
-			, $this->existingData
-		);
 	}
 
 	public function process($input)
 	{
+		fwrite(STDERR, "\tReducer accumulated input..." . print_r($input,1) . PHP_EOL);
+		
 		if(is_string($input))
 		{
 			$input = unserialize(base64_decode($input));
