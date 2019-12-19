@@ -4,8 +4,8 @@ class CapitalizeJob extends \SeanMorris\Multiota\Job
 {
 	protected
 		$mapper = 'SeanMorris\Multiota\Test\Capitalize\CapitalizeProcessor'
-		, $maxChildren = 8
-		, $maxRecordsPerChild = 128
-		, $chunkSize = 32
-		, $childTimeout = 1;
+		, $maxRecordsPerChild = 1000000
+		, $childTimeout       = 5
+		, $maxChildren        = 16
+		, $chunkSize          = 128;
 }

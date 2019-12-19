@@ -19,13 +19,11 @@ class Job
 	{
 		foreach($args as $arg)
 		{
-			/*
 			if(is_a($arg, 'SeanMorris\Multiota\Reducer', TRUE))
 			{
 				$this->reducer = $arg;
 				continue;
 			}
-			*/
 
 			if(is_a($arg, 'SeanMorris\Multiota\Mapper', TRUE))
 			{

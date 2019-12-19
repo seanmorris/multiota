@@ -5,8 +5,8 @@ class CountJob extends \SeanMorris\Multiota\Job
 	protected
 		$dataSource = 'SeanMorris\Multiota\Test\Count\CountSource'
 		, $processor = 'SeanMorris\Multiota\Test\Count\CountProcessor'
-		, $maxChildren = 8
-		, $maxRecordsPerChild = 128
-		, $chunkSize = 32
+		, $maxChildren = 16
+		, $maxRecordsPerChild = 1024
+		, $chunkSize = 64
 		, $childTimeout = 1;
 }

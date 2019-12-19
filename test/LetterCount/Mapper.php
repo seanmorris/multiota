@@ -4,7 +4,9 @@ class Mapper extends \SeanMorris\Multiota\Mapper
 {
 	public function process($record)
 	{
-		$record = str_split($record);
+		fwrite(STDERR, "\tProcessing...\n\t" . print_r($record, 1) . PHP_EOL . PHP_EOL);
+
+		$record = str_split($record->value());
 		$output = [];
 
 		while($record)
@@ -23,10 +25,9 @@ class Mapper extends \SeanMorris\Multiota\Mapper
 
 			$output[$letter]++;
 		}
+		
+		fwrite(STDERR, "\tEmitting..." . PHP_EOL);
 
-		foreach($output as $letter => $count)
-		{
-			$this->reduce($letter, $count);
-		}
+		$this->reduce($output);
 	}
 }

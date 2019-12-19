@@ -1,18 +1,17 @@
 {
     "name": "seanmorris/multiota",
-    "require-dev": {
-        
-    },
+    "bin": ["bin/multiota", "bin/multiota-child"],
     "authors": [
         {
             "name": "Sean Morris",
             "email": "sean@sean-morris.com"
         }
     ],
-    "require": {},
+    "require": {
+    	"seanmorris/ids": "dev-sm-abstract-log as dev-master"
+    },
     "require-dev": {
-        "simpletest/simpletest": "dev-master",
-        "seanmorris/ids": "dev-master"
+        "simpletest/simpletest": "dev-master"
     },
     "autoload": {
         "psr-4": {

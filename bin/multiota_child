@@ -9,3 +9,4 @@ $argv && $timeout   = array_shift($argv);
 
 $processor = new $processor($child, $max, $timeout);
 $processor->spin();
+// $processor->finish();

@@ -3,7 +3,7 @@ namespace SeanMorris\Multiota\Test\Count;
 class CountSource extends \SeanMorris\Multiota\DataSource
 {
 	protected
-		$records = 2**7
+		$records = 2**16
 		, $done  = FALSE
 	;
 

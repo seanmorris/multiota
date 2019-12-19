@@ -4,12 +4,27 @@ class Reducer extends \SeanMorris\Multiota\Reducer
 {
 	protected function accumulate($data)
 	{
-		if(!isset($this->existingData[$data->key()]))
-		{
-			$this->existingData[$data->key()] = 0;
-		}
+		// fwrite(STDERR, "\tReducer accumulated key..." . print_r($data->key(), 1) . PHP_EOL);
+		// fwrite(STDERR, "\tReducer accumulated value..." . print_r($data->value(), 1) . PHP_EOL);
 
-		$this->existingData[$data->key()] = $data->value() + $this->existingData[$data->key()];
+		// if(!isset($this->existingData[$data->key()]))
+		// {
+		// 	$this->existingData[$data->key()] = 0;
+		// }
+
+		// $this->existingData[$data->key()] = $data->value() + $this->existingData[$data->key()];
+
+		// ksort($this->existingData);
+
+		foreach($data->value() as $k => $v)
+		{
+			if(!isset($this->existingData[ $k ]))
+			{
+				$this->existingData[ $k ] = 0;
+			}
+
+			$this->existingData[ $k ] += $v;
+		}
 
 		ksort($this->existingData);
 	}

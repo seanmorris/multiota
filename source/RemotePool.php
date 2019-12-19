@@ -6,7 +6,8 @@ class RemotePool extends Pool
 		$servers = []
 	;
 
-	public function __construct(...$args){
+	public function __construct(...$args)
+	{
 		parent::__construct(...$args);
 
 		if(isset($this->sourceArgs['servers']))
@@ -37,7 +38,7 @@ class RemotePool extends Pool
 		return $command;
 	}
 
-	protected function reduceCommand($started)
+	protected function reducerCommand($started)
 	{
 		$serverCount = count($this->servers);
 		$server = $this->servers[$started % $serverCount];

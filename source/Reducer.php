@@ -14,20 +14,21 @@ class Reducer extends Mapper
 		return $this->existingData;
 	}
 
-	protected function finish()
+	public function finish()
 	{
+		fwrite(STDERR, "\tReducer finished... " . print_r($this->existingData, 1) . PHP_EOL);
 		$this->emit($this->existingData);
 	}
 
 	public function process($input)
 	{
-		fwrite(STDERR, "\tReducer accumulated input..." . print_r($input,1) . PHP_EOL);
-		
 		if(is_string($input))
 		{
 			$input = unserialize(base64_decode($input));
 		}
 		
+		fwrite(STDERR, "\tReducer accumulated input... " . print_r($input,1) . PHP_EOL);
+
 		$input && $this->accumulate($input);
 	}
 }

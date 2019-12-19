@@ -37,12 +37,14 @@ class Mapper
 
 	public function emit($record)
 	{
+		fwrite(STDERR, print_r($record, 1) . PHP_EOL);
+		// fwrite(STDERR, base64_encode(serialize($record)) . PHP_EOL);
 		fwrite(STDOUT, base64_encode(serialize($record)) . PHP_EOL);
 	}
 
-	public function reduce($key, $record)
+	public function reduce($record)
 	{
-		$this->emit(new ReduceRecord($key, $record));
+		$this->emit(new ReduceRecord('z_' . uniqid(), $record));
 	}
 
 	public function spin()
@@ -82,7 +84,7 @@ class Mapper
 
 				if(!is_a($input, 'SeanMorris\Multiota\ReduceRecord'))
 				{
-					//$input = new ReduceRecord(uniqid(), $input);
+					$input = new ReduceRecord('x_'.uniqid(), $input);
 				}
 
 				if(($output = $this->process($input)) !== NULL)
@@ -115,8 +117,6 @@ class Mapper
 				$loops = 0;
 			}
 		}
-
-		$this->finish();
 
 		$log = sprintf(
 			'%s process #%d processed %d records. Exiting...'
@@ -160,7 +160,7 @@ class Mapper
 		return $this->processed;
 	}
 
-	protected function finish()
+	public function finish()
 	{
 
 	}
