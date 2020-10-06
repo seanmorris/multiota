@@ -1,5 +1,8 @@
 <?php
 namespace SeanMorris\Multiota;
+
+use \SeanMorris\Ids\ChildProcess;
+
 class Pool
 {
 	protected
@@ -58,6 +61,7 @@ class Pool
 
 	public function error($error)
 	{
+		// \SeanMorris\Ids\Log::error($error);
 		fwrite(STDERR, $error . PHP_EOL);
 	}
 
@@ -108,13 +112,17 @@ class Pool
 			$this->localReducer = new $reducerClass;
 		}
 
+		$reduceRecords = [];
+
 		while(1)
 		{
-			$reduceRecords = [];
-
 			while(!$this->dataSource->done() && count($mappers) < $this->children)
 			{
-				$newProcess = new ChildProcess($this->mapperCommand($mapperId));
+				$newProcess = new ChildProcess(
+					$this->mapperCommand($mapperId)
+					, TRUE
+				);
+
 				$mappers[] = $newProcess;
 				$maxMapperKey = max(array_keys($mappers));
 				$mapperId++;
@@ -129,33 +137,34 @@ class Pool
 
 				$mapperCurrentChunk = 0;
 
-				while(
-					!$this->dataSource->done()
-					&& $mappersFed[$childId] < $this->maxRecords
-					&& $mapperCurrentChunk < $this->maxChunkSize
-				){
-					$record = $this->dataSource->fetch();
-
-					if(!$this->dataSource->done() || $record)
+				while($mapperCurrentChunk < $this->maxChunkSize)
+				{
+					if(!$record = $this->dataSource->fetch())
 					{
-						$child->write(base64_encode(serialize($record)) . PHP_EOL);
-
-						$mappersFed[$childId]++;
-						$mapperCurrentChunk++;
-						$sentToMapper++;
+						break;
 					}
+					
+					$child->write(base64_encode(serialize($record)) . PHP_EOL);
+
+					$mappersFed[$childId]++;
+					$mapperCurrentChunk++;
+					$sentToMapper++;
 				}
 
 				while($error = $child->readError())
 				{
-					$this->error("\t" . $error);
+					$this->error("\t:M:" . $error);
 				}
 
-				while($record = $child->read())
+				while(!$child->isDead())
 				{
+					if(!$record = $child->read())
+					{
+						break;
+					}
+
 					$record = unserialize(base64_decode($record));
 
-					// fwrite(STDERR, 'Got '. print_r($record, 1) . PHP_EOL);
 
 					if(is_scalar($record))
 					{
@@ -163,6 +172,7 @@ class Pool
 					}
 					elseif($record instanceof ReduceRecord)
 					{
+						// fwrite(STDERR, '###'. print_r($record, 1) . PHP_EOL);
 						$reduceRecords[] = $record;
 					}
 					else
@@ -173,55 +183,74 @@ class Pool
 
 				if($child->isDead())
 				{
-					unset($child, $mappers[$childId], $mappersFed[$childId]);
+					unset(
+						$child
+						, $mappers[$childId]
+						, $mappersFed[$childId]
+					);
 				}
 			}
 
-			while($reduceRecords)
+			while(count($reducers) < $this->children)
 			{
-				while(count($reducers) < $this->children)
-				{
-					$newProcess = new ChildProcess($this->reducerCommand($reducerId));
-					$reducers[] = $newProcess;
-					$maxReducerKey = max(array_keys($reducers));
-					$reducerId++;
-				}
+				$newProcess = new ChildProcess(
+					$this->reducerCommand($reducerId)
+					, TRUE
+				);
+				$reducers[]    = $newProcess;
+				$maxReducerKey = max(array_keys($reducers));
+				$reducerId++;
+			}
 
+			if($reduceRecords)
+			{
 				foreach($reducers as $childId => $child)
 				{
+					$record = array_shift($reduceRecords);
+					
+					// if(!isset($reducersFed[$childId]))
+					// {
+					// 	$reducersFed[$childId] = 0;
+					// }
+
+					// if($reducersFed[$childId] < $this->maxRecords)
+					// {
+					// }
+					
 					$child->write(base64_encode(serialize($record)) . PHP_EOL);
+
+					// $reducersFed[$childId]++;
 
 					while($error = $child->readError())
 					{
-						$this->error("\t" . $error);
+						$this->error("\tRR:" . $error);
 					}
 
-					while($record = $child->read())
+					while(!$child->isDead())
 					{
-						$record = unserialize(base64_decode($record));
+						if(!$record = $child->read())
+						{
+							break;
+						}
 
-						fwrite(STDERR, '###--'. serialize($record) . PHP_EOL);
+						$record = unserialize(base64_decode($record));
 
 						$this->localReducer->process(new ReduceRecord('w_' . uniqid(), $record));
 					}
 
 					if($child->isDead())
 					{
-						fwrite(STDERR, '!!'. PHP_EOL);
-						unset($child, $reducers[$childId]);
-						continue;
+						unset(
+							$child
+							, $reducers[$childId]
+							// , $reducersFed[$childId]
+						);
 					}
-
-					if(!$reduceRecords)
-					{
-						break;
-					}
-
-					if(!$record = array_shift($reduceRecords))
-					{
-						continue;
-					}
-				}
+				}				
+			}
+			else
+			{
+				// fwrite(STDERR, 'Nothing left to reduce...' . PHP_EOL);
 			}
 
 			$newProgress = $sentToMapper - array_sum($mappersFed);
@@ -229,7 +258,7 @@ class Pool
 			if($mapped !== $newProgress)
 			{
 				$mapped = $newProgress;
-
+				
 				$this->progress($mapped);
 			}
 
@@ -239,35 +268,52 @@ class Pool
 			}
 		}
 
-		foreach($reducers as $childId => $child)
+		while(count($reducers))
 		{
-			while($error = $child->readError())
+			foreach($reducers as $childId => $child)
 			{
-				$this->error("\t" . $error);
-			}
+				// usleep(1000 * 5);
 
-			while($record = $child->read())
-			{
-				$record = unserialize(base64_decode($record));
+				while($error = $child->readError())
+				{
+					$this->error("\tR: " . $error);
+				}
 
-				fwrite(STDERR, '###'. serialize($record) . PHP_EOL);
+				while(!$child->isDead())
+				{
+					if(!$record = $child->read())
+					{
+						continue;
+					}
 
-				$this->localReducer->process(new ReduceRecord('w_' . uniqid(), $record));
-			}
+					$record = unserialize(base64_decode($record));
 
-			if($child->isDead())
-			{
-				fwrite(STDERR, '!!'. PHP_EOL);
-				unset($child, $reducers[$childId]);
-				continue;
-			}
+					// fwrite(STDERR, '###'. serialize($record) . PHP_EOL);
+
+					$this->localReducer->process(new ReduceRecord('w_' . uniqid(), $record));
+				}
+
+				if($child->isDead() && $child->feof())
+				{
+					if($child->isDead())
+					{
+						unset(
+							$child
+							, $reducers[$childId]
+							// , $reducersFed[$childId]
+						);
+					}
+
+					continue;
+				}
+			}			
 		}
 
 		if(isset($this->localReducer))
 		{
 			$reducedData = $this->localReducer->get();
 
-			var_dump($reducedData);
+			print_r($reducedData);
 		}
 
 		$done = TRUE;

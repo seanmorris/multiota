@@ -27,7 +27,7 @@ class ChildProcess
 
 		list($this->stdIn, $this->stdOut, $this->stdErr) = $pipes;
 
-		stream_set_blocking($this->stdIn, FALSE);
+		stream_set_blocking($this->stdIn,  TRUE);
 		stream_set_blocking($this->stdOut, FALSE);
 		stream_set_blocking($this->stdErr, FALSE);
 	}

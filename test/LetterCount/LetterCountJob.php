@@ -5,8 +5,7 @@ class LetterCountJob extends \SeanMorris\Multiota\Job
 	protected
 		$mapper    = 'SeanMorris\Multiota\Test\LetterCount\Mapper'
 		, $reducer = 'SeanMorris\Multiota\Test\LetterCount\Reducer'
-		, $maxChildren        = 5
-		, $maxRecordsPerChild = 100
-		, $chunkSize          = 1
+		, $maxChildren        = 8
+		, $chunkSize          = 100
 		, $childTimeout       = 1;
 }

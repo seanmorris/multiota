@@ -27,7 +27,7 @@ class Mapper
 			, $this->timeout
 		);
 
-		fwrite(STDERR, $log . PHP_EOL);
+		// fwrite(STDERR, $log . PHP_EOL);
 	}
 
 	public function process($input)
@@ -37,7 +37,7 @@ class Mapper
 
 	public function emit($record)
 	{
-		fwrite(STDERR, print_r($record, 1) . PHP_EOL);
+		// fwrite(STDERR, print_r($record, 1) . PHP_EOL);
 		// fwrite(STDERR, base64_encode(serialize($record)) . PHP_EOL);
 		fwrite(STDOUT, base64_encode(serialize($record)) . PHP_EOL);
 	}
@@ -61,23 +61,25 @@ class Mapper
 
 		$timedout = FALSE;
 
-		while(($max <= 0 || $this->processed < $max) && !$this->done)
+		while(($max <= 0 || $this->processed < $max) && !$this->done && !$timedout)
 		{
 			$loops++;
 
 			if($input = trim(fgets($stdin)))
 			{
+				$this->start = time();
+
 				$input = unserialize(base64_decode($input));
 
 				$log = sprintf(
 					"%s process #%d got input.\n%s"
 					, $this->shortClass
 					, $child
-					, print_r($input, 1)
+					, '' //print_r($input, 1)
 				);
 
-				$this->processed++;
-				fwrite(STDERR, $log . PHP_EOL);
+				// $this->processed++;
+				// fwrite(STDERR, $log . PHP_EOL);
 
 				$this->resetTimeout();
 				$loops = 0;
@@ -105,7 +107,7 @@ class Mapper
 						, $this->processed
 					);
 
-					fwrite(STDERR, $log . PHP_EOL);
+					// fwrite(STDERR, $log . PHP_EOL);
 
 					//\SeanMorris\Ids\Log::debug($log);
 
@@ -125,7 +127,9 @@ class Mapper
 			, $this->processed
 		);
 
-		$timedout || fwrite(STDERR, $log . PHP_EOL);
+		// $timedout || fwrite(STDERR, $log . PHP_EOL);
+
+		$this->finish();
 
 		//$timedout || \SeanMorris\Ids\Log::debug($log);
 	}

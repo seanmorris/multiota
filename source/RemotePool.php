@@ -19,7 +19,7 @@ class RemotePool extends Pool
 			throw new \Exception('No servers defined for remote job.');
 		}
 
-		fwrite(STDERR, "Connecting to\n\t" . implode("\n\t", $this->servers) . PHP_EOL);
+		\SeanMorris\Ids\Log::debug("Connecting to\n\t" . implode("\n\t", $this->servers) . PHP_EOL);
 	}
 
 	protected function mapperCommand($started)

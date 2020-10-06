@@ -83,11 +83,19 @@ class RootRoute implements \SeanMorris\Ids\Routable
 	{
 		$job = new \SeanMorris\Multiota\Job(
 			'SeanMorris\Multiota\Test\Capitalize\CapitalizeProcessor'
-			, 'SeanMorris\Multiota\RemotePool'
-			, [
-				'servers' => ['thewhtrbt.com', 'buzzingbeesalon.com']
-			]
+			// , 'SeanMorris\Multiota\RemotePool'
+			// , [
+			// 	'servers' => ['thewhtrbt.com', 'buzzingbeesalon.com']
+			// ]
 		);
+		$job->start();
+	}
+
+	/** Multiota specific. */
+
+	public function letterCountJob()
+	{
+		$job = new \SeanMorris\Multiota\Test\LetterCount\LetterCountJob();
 		$job->start();
 	}
 

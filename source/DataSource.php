@@ -21,7 +21,7 @@ class DataSource
 
 	public function done()
 	{
-		return $this->done || feof($this->handle);
+		return feof($this->handle);
 	}
 
 	public function fetch()

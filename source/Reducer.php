@@ -16,7 +16,13 @@ class Reducer extends Mapper
 
 	public function finish()
 	{
-		fwrite(STDERR, "\tReducer finished... " . print_r($this->existingData, 1) . PHP_EOL);
+		// fwrite(
+		// 	STDERR
+		// 	, "Reducer complete... "
+		// 		. print_r($this->existingData, 1)
+		// 		. PHP_EOL
+		// );
+		
 		$this->emit($this->existingData);
 	}
 
@@ -27,8 +33,12 @@ class Reducer extends Mapper
 			$input = unserialize(base64_decode($input));
 		}
 		
-		fwrite(STDERR, "\tReducer accumulated input... " . print_r($input,1) . PHP_EOL);
+		$this->accumulate($input);
 
-		$input && $this->accumulate($input);
+		// fwrite(STDERR,
+		// 	"Reducer accumulated data..." . print_r($this->existingData, 1) . PHP_EOL
+		// 	// , $input
+		// 	// , $this->existingData
+		// );
 	}
 }
